@@ -1,5 +1,5 @@
 #!/usr/bin/env elixir
-defmodule Puzzle02 do
+defmodule Puzzle01 do
   @moduledoc """
   You notice that the device repeats the same frequency change list over and over. To calibrate the device, you need to find the first frequency it reaches twice.
 
@@ -24,7 +24,7 @@ defmodule Puzzle02 do
   """
 
   defp read_shifts_file() do
-    {:ok, shifts} = File.read("input02.txt")
+    {:ok, shifts} = File.read("input01.txt")
     shifts
     |> String.split("\r\n")
     |> Stream.map(&String.to_integer/1)
@@ -37,4 +37,4 @@ defmodule Puzzle02 do
   end
 end
 
-IO.puts Puzzle02.solve
+IO.puts Puzzle01.solve
