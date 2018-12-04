@@ -19,21 +19,28 @@ defmodule Puzzle02 do
 
   defp read_box_ids_file() do
     {:ok, file_content} = File.read("input02.txt")
-    
+
     String.split(file_content, "\n")
   end
-  
+
   defp matching_letters(word1, word2) do
     [word1, word2]
-      |> Enum.map(&String.graphemes/1)
-      |> List.zip()
-      |> Enum.filter(fn {a,b} -> a == b end)
-      |> Enum.map(fn {a,b} -> a end)
-      |> Enum.reduce(fn x, acc -> acc <> x end)
+    |> Enum.map(&String.graphemes/1)
+    |> List.zip()
+    |> Enum.filter(fn {a,b} -> a == b end)
+    |> Enum.map(fn {a,_} -> a end)
+    |> Enum.reduce(fn x, acc -> acc <> x end)
   end
 
   def solve do
     read_box_ids_file()
+    |> Stream.transform([], fn
+      x, acc -> {
+                  for i <- acc do matching_letters(x, i) end,
+                  acc ++ [x]
+                }
+    end)
+    |> Enum.max_by(&String.length/1)
   end
 end
 

@@ -26,41 +26,41 @@ defmodule Puzzle02 do
   """
 
   defp read_box_ids_file() do
-    {:ok, box_ids} = File.read("input02.txt")
-    box_ids
-    |> String.split("\n")
+    {:ok, file_content} = File.read("input02.txt")
+
+    String.split(file_content, "\n")
   end
-  
+
   defp has_double_letters(box_id) do
     box_id
-	|> String.graphemes()
+    |> String.graphemes()
     |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
-	|> Map.values()
-	|> Enum.member?(2)
+    |> Map.values()
+    |> Enum.member?(2)
   end
-  
+
   defp has_triple_letters(box_id) do
     box_id
-	|> String.graphemes()
+    |> String.graphemes()
     |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
-	|> Map.values()
-	|> Enum.member?(3)
+    |> Map.values()
+    |> Enum.member?(3)
   end
 
   def solve do
     box_ids = read_box_ids_file()
-	
-	double_letter_count =
-	  box_ids
-	  |> Stream.filter(&has_double_letters/1)
-	  |> Enum.count()
-	  
-	triple_letter_count =
-	  box_ids
-	  |> Stream.filter(&has_triple_letters/1)
-	  |> Enum.count()
-	  
-	double_letter_count * triple_letter_count
+
+    double_letter_count =
+      box_ids
+      |> Stream.filter(&has_double_letters/1)
+      |> Enum.count()
+
+    triple_letter_count =
+      box_ids
+      |> Stream.filter(&has_triple_letters/1)
+      |> Enum.count()
+
+    double_letter_count * triple_letter_count
   end
 end
 
