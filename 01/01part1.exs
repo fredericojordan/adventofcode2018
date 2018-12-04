@@ -21,6 +21,7 @@ defmodule Puzzle01 do
 
   defp read_shifts_file() do
     {:ok, shifts} = File.read("input01.txt")
+    
     shifts
     |> String.split("\n")
     |> Stream.map(&String.to_integer/1)
