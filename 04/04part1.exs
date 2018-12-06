@@ -57,24 +57,25 @@ defmodule Puzzle04 do
     String.split(file_content, "\n")
   end
 
-  defp get_minutes(<<_::bytes-size(15)>> <> <<minutes::bytes-size(2)>> <> _), do: String.to_integer(minutes)
+  defp parse_minutes(<<_::bytes-size(15)>> <> <<minutes::bytes-size(2)>> <> _), do: String.to_integer(minutes)
+
+  defp get_guard_id(entry) do
+    entry
+    |> String.split(" ")
+    |> Enum.at(3)
+    |> String.trim_leading("#")
+    |> String.to_integer()
+  end
 
   defp sum_shift_sleep([head|tail]) do
     minutes =
       tail
-      |> Enum.map(&get_minutes/1)
+      |> Enum.map(&parse_minutes/1)
       |> Enum.chunk_every(2)
       |> Enum.map(fn [s, e] -> e - s end)
       |> Enum.sum()
 
-    guard_id =
-      head
-      |> String.split(" ")
-      |> Enum.at(3)
-      |> String.trim_leading("#")
-      |> String.to_integer()
-
-    {guard_id, minutes}
+    {get_guard_id(head), minutes}
   end
 
   defp chunking_fn(item, []), do: {:cont, [item]}
@@ -82,12 +83,30 @@ defmodule Puzzle04 do
   defp chunking_fn(item, acc), do: {:cont, [item | acc]}
 
   def solve do
-    read_log_file()
-    |> Enum.sort_by(fn "[" <> <<time::bytes-size(16)>> <> _ -> time end)
-    |> Enum.chunk_while([], &chunking_fn/2, fn acc -> {:cont, Enum.reverse(acc), []} end)
-    |> Enum.map(&sum_shift_sleep/1)
-    |> Enum.reduce(%{}, fn {id, min}, acc -> Map.update(acc, id, min, &(&1 + min)) end)
-    |> Enum.max_by(fn {_, mins} -> mins end)
+    shifts =
+      read_log_file()
+      |> Enum.sort_by(fn "[" <> <<time::bytes-size(16)>> <> _ -> time end)
+      |> Enum.chunk_while([], &chunking_fn/2, fn acc -> {:cont, Enum.reverse(acc), []} end)
+
+    {guard_id, _} =
+      shifts
+      |> Enum.map(&sum_shift_sleep/1)
+      |> Enum.reduce(%{}, fn {id, min}, acc -> Map.update(acc, id, min, &(&1 + min)) end)
+      |> Enum.max_by(fn {_, mins} -> mins end)
+
+    sleep_periods =
+      shifts
+      |> Enum.map(fn [head|tail] -> [get_guard_id(head) | Enum.map(tail, &parse_minutes/1)] end)
+      |> Enum.filter(fn [head|_] -> head == guard_id end)
+      |> Enum.map(fn [_|tail] -> Enum.chunk_every(tail, 2) end)
+      |> Enum.map(fn x -> Enum.map(x, fn [a,b] -> a..b-1 end) end)
+      |> List.flatten()
+
+    minute_most_asleep =
+      0..59
+      |> Enum.max_by(fn min -> Enum.count(sleep_periods, fn period -> Enum.member?(period, min) end) end)
+
+    guard_id * minute_most_asleep
   end
 end
 
