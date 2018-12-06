@@ -52,8 +52,7 @@ defmodule Puzzle05 do
     read_polymer_file()
     |> String.graphemes()
     |> Enum.reduce_while([], &reducing_fn/2)
-    |> Enum.reduce(&Kernel.<>/2)
-    |> String.length()
+    |> Enum.count()
   end
 end
 
