@@ -30,7 +30,7 @@ defmodule Puzzle05 do
     file_content
   end
 
-  def destroys?([a,b]) do
+  defp destroys?([a,b]) do
     Enum.all?([
       String.upcase(a) == String.upcase(b),
       String.downcase(a) == String.downcase(b),
@@ -38,9 +38,9 @@ defmodule Puzzle05 do
     ])
   end
 
-  def reducing_fn(x, []), do: {:cont, [x]}
+  defp reducing_fn(x, []), do: {:cont, [x]}
 
-  def reducing_fn(x, [head|tail]) do
+  defp reducing_fn(x, [head|tail]) do
     if destroys?([x, head]) do
       {:cont, tail}
     else
