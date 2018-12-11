@@ -54,14 +54,12 @@ defmodule Puzzle07 do
     tasks
     |> Enum.filter(fn x -> Enum.all?(Map.get(dependencies, x, []), &(Enum.member?(sent, &1))) end)
     |> Enum.filter(fn x -> !Enum.member?(sent, x) end)
+    |> Enum.sort()
   end
 
   defp unf_fn({_, [], _}), do: nil
   defp unf_fn({sent, [head|_], {tasks, dependencies}}) do
-    newly_available =
-      get_availables(tasks, dependencies, [head|sent])
-      |> Enum.reject(fn x -> Enum.member?(sent, x) end)
-      |> Enum.sort()
+    newly_available = get_availables(tasks, dependencies, [head|sent])
 
     {head, {[head|sent], newly_available, {tasks, dependencies}}}
   end
