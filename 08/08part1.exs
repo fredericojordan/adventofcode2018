@@ -54,15 +54,14 @@ defmodule Puzzle08 do
   end
 
   defp unf_fn({[], _, _}), do: nil
-  defp unf_fn({[childs | [metas | tail]], [], []}), do: {nil, {tail, [childs], [metas]}}
+  defp unf_fn({[childs | [metas | tail]], [], []}), do: unf_fn({tail, [childs], [metas]})
   defp unf_fn({list, [0|bros], [p|pend]}), do: {Enum.take(list, p), {Enum.drop(list, p), bros, pend}}
   defp unf_fn({[0 | [metas | tail]], [b|bros], pend}), do: {Enum.take(tail, metas), {Enum.drop(tail, metas), [b-1|bros], pend}}
-  defp unf_fn({[childs | [metas | tail]], [b|bros], pend}), do: {nil, {tail, [childs|[b-1|bros]], [metas|pend]}}
+  defp unf_fn({[childs | [metas | tail]], [b|bros], pend}), do: unf_fn({tail, [childs|[b-1|bros]], [metas|pend]})
 
   def solve do
     {read_tree_file(), [], []}
     |> Stream.unfold(&unf_fn/1)
-    |> Stream.reject(fn x -> x == nil end)
     |> Enum.to_list()
     |> List.flatten()
     |> Enum.sum()
