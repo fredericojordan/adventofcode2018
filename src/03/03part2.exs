@@ -1,7 +1,10 @@
 #!/usr/bin/env elixir
 defmodule Puzzle03 do
   @moduledoc """
-  Amidst the chaos, you notice that exactly one claim doesn't overlap by even a single square inch of fabric with any other claim. If you can somehow draw attention to it, maybe the Elves will be able to make Santa's suit after all!
+  --- Part Two ---
+
+  Amidst the chaos, you notice that exactly one claim doesn't overlap by even a single square inch of fabric with any
+  other claim. If you can somehow draw attention to it, maybe the Elves will be able to make Santa's suit after all!
 
   For example, in the claims above, only claim 3 is intact after all claims are made.
 
@@ -48,4 +51,4 @@ defmodule Puzzle03 do
   end
 end
 
-IO.puts Puzzle03.solve
+IO.inspect Puzzle03.solve

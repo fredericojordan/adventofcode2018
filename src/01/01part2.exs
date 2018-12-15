@@ -1,7 +1,10 @@
 #!/usr/bin/env elixir
 defmodule Puzzle01 do
   @moduledoc """
-  You notice that the device repeats the same frequency change list over and over. To calibrate the device, you need to find the first frequency it reaches twice.
+  --- Part Two ---
+
+  You notice that the device repeats the same frequency change list over and over. To calibrate the device, you need to
+  find the first frequency it reaches twice.
 
   For example, using the same list of changes above, the device would loop as follows:
 
@@ -12,7 +15,9 @@ defmodule Puzzle01 do
   (At this point, the device continues from the start of the list.)
   Current frequency  3, change of +1; resulting frequency  4.
   Current frequency  4, change of -2; resulting frequency  2, which has already been seen.
-  In this example, the first frequency reached twice is 2. Note that your device might need to repeat its list of frequency changes many times before a duplicate frequency is found, and that duplicates might be found while in the middle of processing the list.
+  In this example, the first frequency reached twice is 2. Note that your device might need to repeat its list of
+  frequency changes many times before a duplicate frequency is found, and that duplicates might be found while in the
+  middle of processing the list.
 
   Here are other examples:
 
@@ -34,8 +39,14 @@ defmodule Puzzle01 do
   def solve do
     read_shifts_file()
     |> Stream.cycle()
-    |> Enum.reduce_while({0, MapSet.new()}, fn x, {acc, seen} -> if MapSet.member?(seen, acc+x), do: {:halt, acc+x}, else: {:cont, {acc+x, MapSet.put(seen, acc+x)}} end)
+    |> Enum.reduce_while({0, MapSet.new()},fn x, {acc, seen} ->
+      if MapSet.member?(seen, acc+x) do
+        {:halt, acc+x}
+      else
+        {:cont, {acc+x, MapSet.put(seen, acc+x)}}
+      end
+    end)
   end
 end
 
-IO.puts Puzzle01.solve
+IO.inspect Puzzle01.solve
