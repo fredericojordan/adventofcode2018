@@ -104,8 +104,8 @@ defmodule Puzzle09 do
   defp winning_elf_score(players, last_marble) do
     Stream.iterate({1, 1}, fn {player, marble} -> {rem(player, players)+1, marble+1} end)
     |> Stream.transform({[0], 0, %{}}, &tr_fn/2)
-    |> Enum.take(last_marble)
-    |> Enum.take(-1)
+    |> Stream.drop(last_marble-1)
+    |> Enum.take(1)
     |> List.first()
     |> get_max_score()
   end
