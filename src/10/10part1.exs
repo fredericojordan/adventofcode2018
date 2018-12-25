@@ -211,8 +211,8 @@ defmodule Puzzle10 do
         end
       end
 
-    big_string
-    |> Enum.map_every(max_x-min_x, fn x -> x <> "\n" end)
+    [""] ++ big_string
+    |> Enum.map_every(max_x-min_x+1, fn x -> x <> "\n" end)
     |> Enum.reduce(fn x, acc -> acc <> x end)
   end
 
