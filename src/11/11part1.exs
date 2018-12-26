@@ -85,29 +85,12 @@ defmodule Puzzle11 do
     |> Kernel.-(5)
   end
 
-  defp relevant_cells([x, y]) do
-    [
-      x   + 300*(y-1),
-      x+1 + 300*(y-1),
-      x+2 + 300*(y-1),
-      x   + 300*(y),
-      x+1 + 300*(y),
-      x+2 + 300*(y),
-      x   + 300*(y+1),
-      x+1 + 300*(y+1),
-      x+2 + 300*(y+1),
-    ]
-  end
-
   defp calculate_grid_power(power_levels, x, y) do
     IO.inspect(x + 300*(y-1))
 
-    grid_power =
-      power_levels
-      |> Stream.with_index(1)
-      |> Stream.filter(fn {_power, index} -> Enum.member?(relevant_cells([x, y]), index) end)
-      |> Stream.map(fn {power, _index} -> power end)
-      |> Enum.sum()
+    grid_power = power_levels[{x, y}]   + power_levels[{x+1, y}]   + power_levels[{x+2, y}]   +
+                 power_levels[{x, y+1}] + power_levels[{x+1, y+1}] + power_levels[{x+2, y+1}] +
+                 power_levels[{x, y+2}] + power_levels[{x+1, y+2}] + power_levels[{x+2, y+2}]
 
     {[x, y], grid_power}
   end
@@ -119,7 +102,12 @@ defmodule Puzzle11 do
 
     serial_number = read_serial_number_file()
 
-    power_levels = for y <- 1..300, x <- 1..300, do: get_power_level([x, y], serial_number)
+    power_levels =
+      Enum.reduce(1..300, %{}, fn y, acc ->
+        Enum.reduce(1..300, acc, fn x, acc ->
+          Map.put(acc, {x, y}, get_power_level([x, y], serial_number))
+        end)
+      end)
 
     for y <- 1..298,
         x <- 1..298 do
@@ -127,7 +115,6 @@ defmodule Puzzle11 do
     end
     |> Enum.max_by(fn {_pos, grid_power} -> grid_power end)
     |> (fn {[x, y], _grid_power} -> [x, y] end).()
-
   end
 end
 
