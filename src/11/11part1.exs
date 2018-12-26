@@ -85,15 +85,15 @@ defmodule Puzzle11 do
     |> Kernel.-(5)
   end
 
-  defp calculate_grid_power(power_levels, x, y) do
-    IO.inspect(x + 300*(y-1))
-
-    grid_power = power_levels[{x, y}]   + power_levels[{x+1, y}]   + power_levels[{x+2, y}]   +
-                 power_levels[{x, y+1}] + power_levels[{x+1, y+1}] + power_levels[{x+2, y+1}] +
-                 power_levels[{x, y+2}] + power_levels[{x+1, y+2}] + power_levels[{x+2, y+2}]
-
-    {[x, y], grid_power}
+  defp calculate_grid_power(power_levels, [x0, y0], size) do
+    for x <- x0..x0+size-1,
+        y <- y0..y0+size-1 do
+      [x, y]
+    end
+    |> Enum.reduce(0, fn [x, y], acc -> acc + Map.get(power_levels, {x, y}, 0) end)
   end
+
+  defp calculate_grid_power(power_levels, [x, y]), do: {[x, y], calculate_grid_power(power_levels, [x, y], 3)}
 
   def solve do
     assert -5 = get_power_level([122, 79], 57)
@@ -111,7 +111,7 @@ defmodule Puzzle11 do
 
     for y <- 1..298,
         x <- 1..298 do
-      calculate_grid_power(power_levels, x, y)
+      calculate_grid_power(power_levels, [x, y])
     end
     |> Enum.max_by(fn {_pos, grid_power} -> grid_power end)
     |> (fn {[x, y], _grid_power} -> [x, y] end).()
