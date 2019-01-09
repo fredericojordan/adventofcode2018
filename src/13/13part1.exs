@@ -1,6 +1,4 @@
 #!/usr/bin/env elixir
-ExUnit.start()
-
 defmodule Puzzle13 do
   @moduledoc """
   --- Day 13: Mine Cart Madness ---
@@ -181,7 +179,6 @@ defmodule Puzzle13 do
 
   In this example, the location of the first crash is 7,3.
   """
-  use ExUnit.Case, async: true
 
   defp read_map_file() do
     {:ok, file_content} = File.read("input13.txt")
