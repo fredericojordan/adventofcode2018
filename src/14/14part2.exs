@@ -15,70 +15,67 @@ defmodule Puzzle14 do
   """
   use ExUnit.Case, async: true
 
-  defp unf_fn({recipes, elf_positions, elf_recipes}) do
-    len = Enum.count(recipes)
-
-    new_positions =
-      elf_positions
-      |> Enum.zip(elf_recipes)
-      |> Enum.map(fn {pos, score} -> rem(pos + score + 1, len) end)
-
-    new_scores =
-      new_positions
-      |> Enum.map(fn pos -> Enum.at(recipes, len-pos-1) end)
-
+  defp next_tick({recipes, len, elf_positions, elf_recipes}) do
     new_recipes =
-      new_scores
+      elf_recipes
       |> Enum.sum()
       |> Integer.digits()
-      |> Enum.reverse()
 
-    {recipes, {new_recipes++recipes, new_positions, new_scores}}
+    next_recipes =
+      new_recipes
+      |> Enum.zip(0..5)
+      |> Enum.reduce(recipes, fn {rec, i}, acc -> Map.put(acc, len+i, rec) end)
+
+    new_len = len + Enum.count(new_recipes)
+
+    next_positions =
+      elf_positions
+      |> Enum.zip(elf_recipes)
+      |> Enum.map(fn {pos, score} -> rem(pos + score + 1, new_len) end)
+
+    next_scores = Enum.map(next_positions, fn pos -> Map.get(next_recipes, pos) end)
+
+    {
+      {recipes, len},
+      {next_recipes, len+Enum.count(new_recipes), next_positions, next_scores}
+    }
   end
 
   defp recipes_before(score_string) do
-    [a, b, c, d, e, f] =
-#    [a, b, c, d, e] =
+    digits =
       score_string
       |> String.graphemes()
       |> Enum.map(&String.to_integer/1)
 
-    {[7, 3], [1, 0], [7, 3]}
-    |> Stream.unfold(&unf_fn/1)
-    |> Stream.drop_while(fn x -> !(match?([^f, ^e, ^d, ^c, ^b, ^a | _], x) or match?([_, ^f, ^e, ^d, ^c, ^b, ^a | _], x)) end)
-#    |> Stream.drop_while(fn x -> !(match?([^e, ^d, ^c, ^b, ^a | _], x) or match?([_, ^e, ^d, ^c, ^b, ^a | _], x)) end)
-    |> Enum.take(1)
-    |> List.first()
-    |> Enum.reverse()
-    |> (fn recipes -> Integer.to_string(Integer.undigits(recipes)) end).()
-    |> (fn recipes_string -> String.split(recipes_string, score_string) end).()
-    |> (fn [head | _tail] -> String.length(head) end).()
+    {%{0=>3, 1=>7}, 2, [0, 1], [3, 7]}
+    |> Stream.unfold(&next_tick/1)
+    |> Enum.reduce_while(nil, fn x, _acc -> reduce_until_found(digits, x) end)
   end
 
-  defp score_after(recipe_count) do
-    {[7, 3], [1, 0], [7, 3]}
-    |> Stream.unfold(&unf_fn/1)
-    |> Stream.drop_while(&(length(&1) < recipe_count + 10))
-    |> Enum.take(1)
-    |> List.first()
-    |> Enum.reverse()
-    |> Enum.slice(recipe_count, 10)
-    |> Integer.undigits()
+  defp reduce_until_found(digits, {recipes, size}) do
+    len = length(digits)
+
+    starting_index = size-len-1
+    index =
+      starting_index..size-1
+      |> Enum.map(fn x -> Map.get(recipes, x) end)
+      |> Enum.chunk_every(len, 1, :discard)
+      |> Enum.find_index(fn x -> x == digits end)
+
+    case index do
+      nil -> {:cont, nil}
+      i -> {:halt, starting_index+i}
+    end
   end
 
   def solve do
-    assert 0124515891 = score_after(5)
-    assert 5158916779 = score_after(9)
-    assert 9251071085 = score_after(18)
-    assert 5941429882 = score_after(2018)
-
-#    assert recipes_before("01245") == 5
-#    assert recipes_before("51589") == 9
-#    assert recipes_before("92510") == 18
-#    assert recipes_before("59414") == 2018
+    assert recipes_before("01245") == 5
+    assert recipes_before("51589") == 9
+    assert recipes_before("92510") == 18
+    assert recipes_before("59414") == 2018
 
     {:ok, input} = File.read("input14.txt")
-#    score_after(String.to_integer(input))
+
     recipes_before(input)
   end
 end
