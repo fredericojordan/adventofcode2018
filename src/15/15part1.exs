@@ -334,10 +334,6 @@ defmodule Puzzle15 do
   """
   use ExUnit.Case, async: true
 
-  defp remove_units({coords, "G"}), do: {coords, "."}
-  defp remove_units({coords, "E"}), do: {coords, "."}
-  defp remove_units(any), do: any
-
   defp parse_row(partial_map, row_num, input_row) do
     input_row
     |> String.graphemes()
@@ -348,14 +344,14 @@ defmodule Puzzle15 do
 
   defp parse_map(input_row, {partial_map, row_num}), do: {parse_row(partial_map, row_num, input_row), row_num+1}
 
-  defp get_cave(game_state) do
-    game_state
-    |> Enum.map(&remove_units/1)
-    |> Map.new()
-  end
-
   defp get_goblins(game_state), do: :maps.filter(fn _coords, v -> v == "G" end, game_state)
+
   defp get_elves(game_state), do: :maps.filter(fn _coords, v -> v == "E" end, game_state)
+
+  defp get_units(game_state), do: :maps.filter(fn _coords, v -> v == "G" or v == "E" end, game_state)
+
+  defp get_adversaries(game_state, "G"), do: get_elves(game_state)
+  defp get_adversaries(game_state, "E"), do: get_goblins(game_state)
 
   defp adjacent_coords({col_num, row_num}) do
     [
@@ -380,13 +376,8 @@ defmodule Puzzle15 do
   defp read_cave_map_file() do
 #    {:ok, file_content} = File.read("input15.txt")
 #    {:ok, file_content} = File.read("test_input.txt")
-    {:ok, file_content} = File.read("test_input2.txt")
-
-    # DEBUG
-    file_content
-    |> String.split("\n")
-    |> Enum.each(&IO.puts/1)
-    # DEBUG
+#    {:ok, file_content} = File.read("test_input2.txt")
+    {:ok, file_content} = File.read("test_input3.txt")
 
     file_content
     |> String.split("\n")
@@ -419,12 +410,12 @@ defmodule Puzzle15 do
     |> (fn {_gs, _r, fill} -> fill end).()
   end
 
-  defp get_elf_target(elf_coord, game_state) do
-    reach = reachable_coords(elf_coord, game_state)
+  defp get_target(unit_coord, game_state) do
+    reach = reachable_coords(unit_coord, game_state)
 
     range =
       game_state
-      |> get_goblins()
+      |> get_adversaries(Map.get(game_state, unit_coord))
       |> Enum.map(fn {c,_} -> c end)
       |> Enum.map(fn c -> open_coords(c, game_state) end)
       |> Enum.reduce(&Kernel.++/2)
@@ -433,12 +424,12 @@ defmodule Puzzle15 do
     |> get_smallest_value()
   end
 
-  defp get_step(elf_coord, game_state) do
-    target = get_elf_target(elf_coord, game_state)
+  defp get_step(unit_coord, game_state) do
+    target = get_target(unit_coord, game_state)
 
     reach = reachable_coords(target, game_state)
 
-    range = open_coords(elf_coord, game_state)
+    range = open_coords(unit_coord, game_state)
 
     :maps.filter(fn coords, _dist -> Enum.member?(range, coords) end, reach)
     |> get_smallest_value()
@@ -456,16 +447,40 @@ defmodule Puzzle15 do
 
   defp sort_coords_fn({x, y}), do: 100_000*y + x
 
+  defp round_iterations(game_state) do
+    game_state
+    |> get_units()
+    |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
+    |> Enum.reduce(game_state, fn {coords, unit}, acc -> Map.put(
+                                                           Map.put(acc, coords, "."),
+                                                           get_step(coords, acc),
+                                                           unit
+                                                         ) end)
+  end
+
+  defp print_game_state(game_state) do
+    game_state
+    |> Enum.group_by(fn {{_x,y},_u} -> y end)
+    |> Enum.sort_by(fn {k,_} -> k end)
+    |> Enum.map(fn {_,v} -> v end)
+    |> Enum.map(fn x -> Enum.sort_by(x, fn {k,_} -> k end) end)
+    |> Enum.map(fn x -> Enum.reduce(x, "", fn {_c, u}, acc -> acc <> u end) end)
+    |> Enum.each(&IO.puts/1)
+
+    IO.puts("")
+
+    game_state
+  end
+
   def solve do
     game_state = read_cave_map_file()
 
-    _cave_map = get_cave(game_state)
-    _goblins = get_goblins(game_state)
-    elves = get_elves(game_state)
+    game_state
+    |> Stream.iterate(&round_iterations/1)
+    |> Stream.each(&print_game_state/1)
+    |> Enum.take(3)
 
-
-    Enum.map(elves, fn {coords, _} -> get_step(coords, game_state) end)
-
+    nil
   end
 end
 
