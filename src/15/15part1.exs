@@ -362,14 +362,18 @@ defmodule Puzzle15 do
     ]
   end
 
-  defp open_squares(coords, game_state) do
+  defp adjacent_squares(coords, game_state) do
     adjacent_coords(coords)
     |> Enum.map(fn coords -> {coords, Map.get(game_state, coords)} end)
+  end
+
+  defp open_adjacent_squares(coords, game_state) do
+    adjacent_squares(coords, game_state)
     |> Enum.filter(fn {_coords, v} -> v == "." end)
   end
 
-  defp open_coords(coords, game_state) do
-    open_squares(coords, game_state)
+  defp open_adjacent_coords(coords, game_state) do
+    open_adjacent_squares(coords, game_state)
     |> Enum.map(fn {coords, _v} -> coords end)
   end
 
@@ -390,7 +394,7 @@ defmodule Puzzle15 do
       game_state,
       round+1,
       fill
-      |> Enum.map(fn {c,r} -> {c,r,open_coords(c, game_state)} end)
+      |> Enum.map(fn {c,r} -> {c,r,open_adjacent_coords(c, game_state)} end)
       |> Enum.reduce({%{}, %{}}, fn {c,r,l}, {fil, new} ->
         {
           Map.put(fil, c, r),
@@ -410,6 +414,18 @@ defmodule Puzzle15 do
     |> (fn {_gs, _r, fill} -> fill end).()
   end
 
+  defp besides_target(unit_coord, game_state) do
+    adjacent_values =
+      adjacent_squares(unit_coord, game_state)
+      |> Enum.map(fn {_c, v} -> v end)
+
+    case Map.get(game_state, unit_coord) do
+      "G" -> Enum.member?(adjacent_values, "E")
+      "E" -> Enum.member?(adjacent_values, "G")
+      _ -> nil
+    end
+  end
+
   defp get_target(unit_coord, game_state) do
     reach = reachable_coords(unit_coord, game_state)
 
@@ -417,7 +433,7 @@ defmodule Puzzle15 do
       game_state
       |> get_adversaries(Map.get(game_state, unit_coord))
       |> Enum.map(fn {c,_} -> c end)
-      |> Enum.map(fn c -> open_coords(c, game_state) end)
+      |> Enum.map(fn c -> open_adjacent_coords(c, game_state) end)
       |> Enum.reduce(&Kernel.++/2)
 
     :maps.filter(fn coords, _dist -> Enum.member?(range, coords) end, reach)
@@ -425,15 +441,25 @@ defmodule Puzzle15 do
   end
 
   defp get_step(unit_coord, game_state) do
+    if besides_target(unit_coord, game_state) do
+      unit_coord
+    else
+      get_step_direction(unit_coord, game_state)
+    end
+  end
+
+  defp get_step_direction(unit_coord, game_state) do
     target = get_target(unit_coord, game_state)
 
     reach = reachable_coords(target, game_state)
 
-    range = open_coords(unit_coord, game_state)
+    range = open_adjacent_coords(unit_coord, game_state)
 
     :maps.filter(fn coords, _dist -> Enum.member?(range, coords) end, reach)
     |> get_smallest_value()
   end
+
+#  defp get_smallest_value(map) when map_size(map) == 0, do: nil
 
   defp get_smallest_value(map) do
     map
@@ -451,11 +477,11 @@ defmodule Puzzle15 do
     game_state
     |> get_units()
     |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
-    |> Enum.reduce(game_state, fn {coords, unit}, acc -> Map.put(
-                                                           Map.put(acc, coords, "."),
-                                                           get_step(coords, acc),
-                                                           unit
-                                                         ) end)
+    |> Enum.reduce(game_state, &walk_units/2)
+  end
+
+  defp walk_units({coords, unit}, game_state_acc) do
+    Map.put(Map.put(game_state_acc, coords, "."), get_step(coords, game_state_acc), unit)
   end
 
   defp print_game_state(game_state) do
