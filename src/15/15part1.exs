@@ -448,9 +448,7 @@ defmodule Puzzle15 do
     end
   end
 
-  defp get_step_direction(unit_coord, game_state) do
-    target = get_target(unit_coord, game_state)
-
+  defp get_step_direction_to_target(unit_coord, game_state, target) do
     reach = reachable_coords(target, game_state)
 
     range = open_adjacent_coords(unit_coord, game_state)
@@ -459,7 +457,16 @@ defmodule Puzzle15 do
     |> get_smallest_value()
   end
 
-#  defp get_smallest_value(map) when map_size(map) == 0, do: nil
+  defp get_step_direction(unit_coord, game_state) do
+    target = get_target(unit_coord, game_state)
+
+    case target do
+      nil -> unit_coord
+      _ -> get_step_direction_to_target(unit_coord, game_state, target)
+    end
+  end
+
+  defp get_smallest_value(map) when map_size(map) == 0, do: nil
 
   defp get_smallest_value(map) do
     map
@@ -504,7 +511,7 @@ defmodule Puzzle15 do
     game_state
     |> Stream.iterate(&round_iterations/1)
     |> Stream.each(&print_game_state/1)
-    |> Enum.take(3)
+    |> Enum.take(4)
 
     nil
   end
