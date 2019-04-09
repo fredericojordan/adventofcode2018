@@ -334,24 +334,31 @@ defmodule Puzzle15 do
   """
   use ExUnit.Case, async: true
 
+  @hitpoints 200
+  @attack_power 3
+
   defp parse_row(partial_map, row_num, input_row) do
     input_row
     |> String.graphemes()
     |> Enum.zip(0..String.length(input_row))
     |> Enum.map(fn {spot, col_num} -> {spot, {col_num, row_num}} end)
-    |> Enum.reduce(partial_map, fn {spot, index}, acc -> Map.put(acc, index, spot) end)
+    |> Enum.reduce(partial_map, fn
+      {"#", index}, acc -> Map.put(acc, index, {"#", 0})
+      {".", index}, acc -> Map.put(acc, index, {".", 0})
+      {spot, index}, acc -> Map.put(acc, index, {spot, @hitpoints})
+    end)
   end
 
   defp parse_map(input_row, {partial_map, row_num}), do: {parse_row(partial_map, row_num, input_row), row_num+1}
 
-  defp get_goblins(game_state), do: :maps.filter(fn _coords, v -> v == "G" end, game_state)
+  defp get_goblins(game_state), do: :maps.filter(fn _coords, {type, _l} -> type == "G" end, game_state)
 
-  defp get_elves(game_state), do: :maps.filter(fn _coords, v -> v == "E" end, game_state)
+  defp get_elves(game_state), do: :maps.filter(fn _coords, {type, _l} -> type == "E" end, game_state)
 
-  defp get_units(game_state), do: :maps.filter(fn _coords, v -> v == "G" or v == "E" end, game_state)
+  defp get_units(game_state), do: :maps.filter(fn _coords, {type, _l} -> type == "G" or type == "E" end, game_state)
 
-  defp get_adversaries(game_state, "G"), do: get_elves(game_state)
-  defp get_adversaries(game_state, "E"), do: get_goblins(game_state)
+  defp get_adversaries(game_state, {"G", _life}), do: get_elves(game_state)
+  defp get_adversaries(game_state, {"E", _life}), do: get_goblins(game_state)
 
   defp adjacent_coords({col_num, row_num}) do
     [
@@ -369,12 +376,12 @@ defmodule Puzzle15 do
 
   defp open_adjacent_squares(coords, game_state) do
     adjacent_squares(coords, game_state)
-    |> Enum.filter(fn {_coords, v} -> v == "." end)
+    |> Enum.filter(fn {_coords, {type, _life}} -> type == "." end)
   end
 
   defp open_adjacent_coords(coords, game_state) do
     open_adjacent_squares(coords, game_state)
-    |> Enum.map(fn {coords, _v} -> coords end)
+    |> Enum.map(fn {coords, _unit} -> coords end)
   end
 
   defp read_cave_map_file() do
@@ -417,11 +424,11 @@ defmodule Puzzle15 do
   defp besides_target(unit_coord, game_state) do
     adjacent_values =
       adjacent_squares(unit_coord, game_state)
-      |> Enum.map(fn {_c, v} -> v end)
+      |> Enum.map(fn {_coords, {type, _life}} -> type end)
 
     case Map.get(game_state, unit_coord) do
-      "G" -> Enum.member?(adjacent_values, "E")
-      "E" -> Enum.member?(adjacent_values, "G")
+      {"G", _life} -> Enum.member?(adjacent_values, "E")
+      {"E", _life} -> Enum.member?(adjacent_values, "G")
       _ -> nil
     end
   end
@@ -480,7 +487,17 @@ defmodule Puzzle15 do
 
   defp sort_coords_fn({x, y}), do: 100_000*y + x
 
-  defp round_iterations(game_state) do
+  defp simulate_round(game_state) do
+    game_state
+    |> walk_units()
+    |> attack_units()
+  end
+
+  defp attack_units(game_state) do
+    game_state  # TODO
+  end
+
+  defp walk_units(game_state) do
     game_state
     |> get_units()
     |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
@@ -488,7 +505,7 @@ defmodule Puzzle15 do
   end
 
   defp walk_units({coords, unit}, game_state_acc) do
-    Map.put(Map.put(game_state_acc, coords, "."), get_step(coords, game_state_acc), unit)
+    Map.put(Map.put(game_state_acc, coords, {".", 0}), get_step(coords, game_state_acc), unit)
   end
 
   defp print_game_state(game_state) do
@@ -497,7 +514,7 @@ defmodule Puzzle15 do
     |> Enum.sort_by(fn {k,_} -> k end)
     |> Enum.map(fn {_,v} -> v end)
     |> Enum.map(fn x -> Enum.sort_by(x, fn {k,_} -> k end) end)
-    |> Enum.map(fn x -> Enum.reduce(x, "", fn {_c, u}, acc -> acc <> u end) end)
+    |> Enum.map(fn x -> Enum.reduce(x, "", fn {_c, {type,_life}}, acc -> acc <> type end) end)
     |> Enum.each(&IO.puts/1)
 
     IO.puts("")
@@ -509,9 +526,9 @@ defmodule Puzzle15 do
     game_state = read_cave_map_file()
 
     game_state
-    |> Stream.iterate(&round_iterations/1)
+    |> Stream.iterate(&simulate_round/1)
     |> Stream.each(&print_game_state/1)
-    |> Enum.take(4)
+    |> Enum.take(6)
 
     nil
   end
