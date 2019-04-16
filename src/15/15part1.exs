@@ -384,8 +384,6 @@ defmodule Puzzle15 do
     |> Enum.map(fn {coords, _unit} -> coords end)
   end
 
-  defp read_cave_map_file, do: read_cave_map_file("input15.txt")
-
   defp read_cave_map_file(filename) do
     {:ok, file_content} = File.read(filename)
 
@@ -511,20 +509,24 @@ defmodule Puzzle15 do
   def adversary("E"), do: "G"
 
   def deal_damage({coords, {my_type, _life}}, game_state_acc) do
-    {target_coords, {target_type, target_life}} =
-      adjacent_squares(coords, game_state_acc)
-      |> Enum.filter(fn {_coords, {type, _life}} -> type == adversary(my_type) end)
-      |> Enum.group_by(fn {_coords, {_type, life}} -> life end)
-      |> Enum.sort_by(fn {k,_} -> k end)
-      |> List.first()
-      |> (fn {_, unit_list} -> unit_list end).()
-      |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
-      |> List.first()
-
-    if target_life > @attack_power do
-      Map.put(game_state_acc, target_coords, {target_type, target_life - @attack_power})
+    if match?({".", _}, Map.get(game_state_acc, coords)) do
+      game_state_acc
     else
-      Map.put(game_state_acc, target_coords, {".", 0})  # TODO: remove from attackers
+      {target_coords, {target_type, target_life}} =
+        adjacent_squares(coords, game_state_acc)
+        |> Enum.filter(fn {_coords, {type, _life}} -> type == adversary(my_type) end)
+        |> Enum.group_by(fn {_coords, {_type, life}} -> life end)
+        |> Enum.sort_by(fn {k,_} -> k end)
+        |> List.first()
+        |> (fn {_, unit_list} -> unit_list end).()
+        |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
+        |> List.first()
+
+      if target_life > @attack_power do
+        Map.put(game_state_acc, target_coords, {target_type, target_life - @attack_power})
+      else
+        Map.put(game_state_acc, target_coords, {".", 0})  # TODO: remove from attackers
+      end
     end
   end
 
@@ -553,8 +555,6 @@ defmodule Puzzle15 do
     |> Enum.map(fn {row, lifes} -> Enum.join([row, Enum.join(lifes, ",")], " ")end)
     |> Enum.each(&IO.puts/1)
 
-    IO.puts("")
-
     game_state
   end
 
@@ -566,11 +566,11 @@ defmodule Puzzle15 do
   end
 
   def solve do
-    assert 27730 = solve(read_cave_map_file("test_input4.txt"))
-    assert 36334 = solve(read_cave_map_file("test_input5.txt"))
-    assert 39514 = solve(read_cave_map_file("test_input6.txt"))
+    assert 27730 = solve(read_cave_map_file("test_input_27730.txt"))
+    assert 36334 = solve(read_cave_map_file("test_input_36334.txt"))
+    assert 39514 = solve(read_cave_map_file("test_input_39514.txt"))
 
-    solve(read_cave_map_file())
+    solve(read_cave_map_file("input15.txt"))
   end
 
   def solve(game_state) do
@@ -582,9 +582,11 @@ defmodule Puzzle15 do
       |> Enum.take(1)
       |> List.first()
 
-    print_game_state(final_game_state)
-
     life_sum = Enum.reduce(final_game_state, 0, fn {_coords, {_type, life}}, acc -> acc + life end)
+
+    print_game_state(final_game_state)
+    IO.puts("#{round_count} * #{life_sum} = #{round_count*life_sum}")
+    IO.puts("")
 
     round_count * life_sum
   end
