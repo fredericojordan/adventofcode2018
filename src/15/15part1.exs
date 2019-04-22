@@ -597,6 +597,9 @@ defmodule Puzzle15 do
     assert 27730 = solve(read_cave_map_file("test_input_27730.txt"))
     assert 36334 = solve(read_cave_map_file("test_input_36334.txt"))
     assert 39514 = solve(read_cave_map_file("test_input_39514.txt"))
+    assert 27755 = solve(read_cave_map_file("test_input_27755.txt"))
+    assert 28944 = solve(read_cave_map_file("test_input_28944.txt"))
+    assert 18740 = solve(read_cave_map_file("test_input_18740.txt"))
 
     solve(read_cave_map_file("input15.txt"))
   end
