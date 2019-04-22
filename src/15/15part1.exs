@@ -444,11 +444,11 @@ defmodule Puzzle15 do
     |> get_smallest_value()
   end
 
-  defp get_step(unit_coord, game_state) do
+  defp get_step({unit_coord, unit}, game_state) do
     if besides_target(unit_coord, game_state) do
       unit_coord
     else
-      get_step_direction(unit_coord, game_state)
+      get_step_direction({unit_coord, unit}, game_state)
     end
   end
 
@@ -461,12 +461,16 @@ defmodule Puzzle15 do
     |> get_smallest_value()
   end
 
-  defp get_step_direction(unit_coord, game_state) do
-    target = get_target(unit_coord, game_state)
+  defp get_step_direction({unit_coord, unit}, game_state) do
+    if has_target(unit, game_state) do
+      target = get_target(unit_coord, game_state)
 
-    case target do
-      nil -> unit_coord
-      _ -> get_step_direction_to_target(unit_coord, game_state, target)
+      case target do
+        nil -> unit_coord
+        _ -> get_step_direction_to_target(unit_coord, game_state, target)
+      end
+    else
+      unit_coord
     end
   end
 
@@ -484,7 +488,7 @@ defmodule Puzzle15 do
 
   defp sort_coords_fn({x, y}), do: 100_000*y + x
 
-  defp simulate_round(game_state) do
+  defp simulate_round({game_state, _}) do
     game_state
     |> walk_units()
     |> attack_units()
@@ -494,7 +498,28 @@ defmodule Puzzle15 do
     game_state
     |> get_units()
     |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
-    |> Enum.reduce(game_state, &attack_units/2)
+    |> Enum.reduce({game_state, nil}, &attack_units/2)
+  end
+
+  defp has_target(unit, game_state_acc) do
+    values =
+      game_state_acc
+      |> Map.values()
+      |> Enum.map(fn {unit, _life} -> unit end)
+
+    case unit do
+      {"G", _life} -> Enum.member?(values, "E")
+      {"E", _life} -> Enum.member?(values, "G")
+      _ -> nil
+    end
+  end
+
+  defp attack_units({coords, unit}, {game_state_acc, _}) do
+    if has_target(unit, game_state_acc) do
+      {attack_units({coords, unit}, game_state_acc), :complete}
+    else
+      {game_state_acc, :incomplete}
+    end
   end
 
   defp attack_units({coords, unit}, game_state_acc) do
@@ -525,7 +550,7 @@ defmodule Puzzle15 do
       if target_life > @attack_power do
         Map.put(game_state_acc, target_coords, {target_type, target_life - @attack_power})
       else
-        Map.put(game_state_acc, target_coords, {".", 0})  # TODO: remove from attackers
+        Map.put(game_state_acc, target_coords, {".", 0})
       end
     end
   end
@@ -538,7 +563,7 @@ defmodule Puzzle15 do
   end
 
   defp walk_units({coords, unit}, game_state_acc) do
-    Map.put(Map.put(game_state_acc, coords, {".", 0}), get_step(coords, game_state_acc), unit)
+    Map.put(Map.put(game_state_acc, coords, {".", 0}), get_step({coords, unit}, game_state_acc), unit)
   end
 
   defp print_game_state(game_state) do
@@ -558,12 +583,15 @@ defmodule Puzzle15 do
     game_state
   end
 
-  def has_both_types({game_state, _index}) do
+  def has_both_types({{game_state, _}, _index}) do
     game_state
     |> Enum.group_by(fn {_coords, {type, _life}} -> type end)
     |> Enum.count()
     |> Kernel.>(3)
   end
+
+  def is_complete_round?({{_, :complete}, _}), do: true
+  def is_complete_round?(_), do: false
 
   def solve do
     assert 27730 = solve(read_cave_map_file("test_input_27730.txt"))
@@ -574,21 +602,23 @@ defmodule Puzzle15 do
   end
 
   def solve(game_state) do
-    {final_game_state, round_count} =
-      game_state
+    {{final_game_state, _}, round_count} =
+      {game_state, :complete}
       |> Stream.iterate(&simulate_round/1)
       |> Stream.with_index()
-      |> Stream.drop_while(&has_both_types/1)
+      |> Stream.drop_while(&is_complete_round?/1)
       |> Enum.take(1)
       |> List.first()
+
+    last_complete_round = round_count - 1
 
     life_sum = Enum.reduce(final_game_state, 0, fn {_coords, {_type, life}}, acc -> acc + life end)
 
     print_game_state(final_game_state)
-    IO.puts("#{round_count} * #{life_sum} = #{round_count*life_sum}")
+    IO.puts("#{last_complete_round} * #{life_sum} = #{last_complete_round*life_sum}")
     IO.puts("")
 
-    round_count * life_sum
+    last_complete_round * life_sum
   end
 end
 
