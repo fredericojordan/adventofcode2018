@@ -490,15 +490,14 @@ defmodule Puzzle15 do
 
   defp simulate_round({game_state, _}) do
     game_state
-    |> walk_units()
-    |> attack_units()
+    |> walk_and_attack_units()
   end
 
-  defp attack_units(game_state) do
+  defp walk_and_attack_units(game_state) do
     game_state
     |> get_units()
     |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
-    |> Enum.reduce({game_state, nil}, &attack_units/2)
+    |> Enum.reduce({game_state, nil}, &walk_and_attack_units/2)
   end
 
   defp has_target(unit, game_state_acc) do
@@ -555,15 +554,19 @@ defmodule Puzzle15 do
     end
   end
 
-  defp walk_units(game_state) do
-    game_state
-    |> get_units()
-    |> Enum.sort_by(fn {c,_u} -> sort_coords_fn(c) end)
-    |> Enum.reduce(game_state, &walk_units/2)
-  end
+  defp walk_and_attack_units({coords, _unit}, {game_state_acc, _status}) do
+    unit = Map.get(game_state_acc, coords)
 
-  defp walk_units({coords, unit}, game_state_acc) do
-    Map.put(Map.put(game_state_acc, coords, {".", 0}), get_step({coords, unit}, game_state_acc), unit)
+    new_coords = get_step({coords, unit}, game_state_acc)
+
+    new_game_state_acc =
+      Map.put(Map.put(game_state_acc, coords, {".", 0}), new_coords, unit)
+
+    if has_target(unit, new_game_state_acc) do
+      {attack_units({new_coords, unit}, new_game_state_acc), :complete}
+    else
+      {new_game_state_acc, :incomplete}
+    end
   end
 
   defp print_game_state(game_state) do
