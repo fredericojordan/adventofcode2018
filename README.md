@@ -1,6 +1,6 @@
 # Advent of Code 2018
 
-![Progress](assets/progress.svg "Progress")
+![Progress](https://progress-bar.dev/58/ "Progress")
 
 My Solutions for [Advent of Code 2018](https://adventofcode.com/2018) using Elixir
 
